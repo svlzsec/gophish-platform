@@ -1,0 +1,6 @@
+{
+  "name": "Microsoft 365 security awareness",
+  "subject": "Revisión de seguridad autorizada",
+  "html": "<html><body><p>Ejercicio interno de concienciación.</p><p><a href=\"{{.URL}}\">Revisar</a></p></body></html>",
+  "text": "Ejercicio interno de concienciación: {{.URL}}"
+}

@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euo pipefail
+dnf install -y docker awscli
+systemctl enable --now docker
+mkdir -p /opt/gophish
+chmod 700 /opt/gophish
+for name in api-key admin-password; do
+  value="$(aws ssm get-parameter --region '${region}' --name "/gophish-platform/${client_name}/$name" --with-decryption --query Parameter.Value --output text)"
+  test "$value" != PROVISION_EXTERNALLY
+  printf '%s=%q\n' "$${name//-/_}" "$value" >> /opt/gophish/runtime.env
+done
+chmod 600 /opt/gophish/runtime.env
+cat >/opt/gophish/docker-compose.yml <<'YAML'
+services:
+  gophish:
+    image: ${gophish_image}
+    restart: unless-stopped
+    ports: ["443:80", "3333:3333"]
+    env_file: ["/opt/gophish/runtime.env"]
+YAML
+docker compose -f /opt/gophish/docker-compose.yml up -d
