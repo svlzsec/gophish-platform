@@ -1,0 +1,7 @@
+{
+  "name": "Service Desk - actualización de ticket",
+  "subject": "Ticket SD-{{.RId}} actualizado: se requiere confirmación",
+  "html": "<html><body style=\"font-family:Arial,sans-serif;color:#25313c\"><table role=\"presentation\" width=\"100%\"><tr><td align=\"center\"><table role=\"presentation\" width=\"580\" style=\"max-width:100%;border:1px solid #d7dee4\"><tr><td style=\"background:#254b6e;color:#fff;padding:20px;font-size:20px\">Service Desk</td></tr><tr><td style=\"padding:28px\"><h2>Tu solicitud fue actualizada</h2><p>Hola {{.FirstName}}, un agente añadió una nota al ticket relacionado con tu cuenta.</p><p><a href=\"{{.URL}}\" style=\"background:#2673b8;color:#fff;padding:12px 18px;text-decoration:none\">Abrir ticket</a></p><p style=\"color:#6b7785;font-size:12px\">No envíes contraseñas ni datos sensibles en un ticket.</p><img src=\"{{.TrackingURL}}\" alt=\"\" width=\"1\" height=\"1\"></td></tr></table></td></tr></table></body></html>",
+  "text": "Hola {{.FirstName}}, tu ticket de Service Desk fue actualizado: {{.URL}}",
+  "landing_page_file": "landing-page.html"
+}

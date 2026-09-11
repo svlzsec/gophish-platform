@@ -1,0 +1,7 @@
+{
+  "name": "RRHH - política pendiente",
+  "subject": "{{.FirstName}}, tienes una política pendiente de confirmar",
+  "html": "<html><body style=\"font-family:Arial,sans-serif;color:#263238\"><div style=\"max-width:580px;margin:auto;border:1px solid #ddd\"><div style=\"background:#7b3f61;color:white;padding:22px;font-size:20px\">Personas & Cultura</div><div style=\"padding:28px\"><h2>Actualización de política interna</h2><p>Hola {{.FirstName}}, se publicó una actualización aplicable a tu equipo. Confirma la lectura antes de la fecha indicada en el portal.</p><p><a href=\"{{.URL}}\" style=\"background:#7b3f61;color:white;padding:12px 18px;text-decoration:none\">Ver documento</a></p><p style=\"font-size:12px;color:#777\">Referencia: RRHH-2026-04 · {{.Company}}</p><img src=\"{{.TrackingURL}}\" alt=\"\" width=\"1\" height=\"1\"></div></div></body></html>",
+  "text": "Hola {{.FirstName}}, hay una actualización de política interna pendiente: {{.URL}}",
+  "landing_page_file": "landing-page.html"
+}

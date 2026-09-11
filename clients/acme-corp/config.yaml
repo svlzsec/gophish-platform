@@ -1,0 +1,11 @@
+client: acme-corp
+base_url: "https://awareness.acme-corp.example:3333"
+api_key_parameter: "/gophish-platform/acme-corp/api-key"
+authorization_path: "clients/acme-corp/authorization.yaml"
+catalog_template: "microsoft365/security-awareness.json"
+campaign:
+  name: "Security awareness 2026"
+  launch_date: "2026-09-15T09:00:00Z"
+  url: "https://awareness.acme-corp.example"
+  group_ids: [1]
+  sending_profile_id: 1
