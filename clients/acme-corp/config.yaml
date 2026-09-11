@@ -5,7 +5,7 @@ authorization_path: "clients/acme-corp/authorization.yaml"
 catalog_template: "microsoft365/security-awareness.json"
 campaign:
   name: "Security awareness 2026"
-  subject: "Revisión de seguridad autorizada"
   launch_date: "2026-09-15T09:00:00Z"
   url: "https://awareness.acme-corp.example"
   group_ids: [1]
+  sending_profile_id: 1

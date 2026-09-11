@@ -4,11 +4,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class CampaignRequest(BaseModel):
     name: str
-    subject: str
     launch_date: datetime | None = None
     url: str
     group_ids: list[int] = Field(min_length=1)
     template_id: int
+    page_id: int
+    sending_profile_id: int
 
 class Campaign(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -26,6 +27,15 @@ class TemplateRequest(BaseModel):
     subject: str
     html: str
     text: str = ""
+
+
+class LandingPageRequest(BaseModel):
+    """Landing page accepted by the Gophish REST API."""
+
+    name: str
+    html: str
+    capture_credentials: bool = False
+    capture_passwords: bool = False
 
 class ClientConfig(BaseModel):
     client: str

@@ -1,200 +1,78 @@
 # gophish-platform
 
-Plataforma interna para campañas **autorizadas** de concienciación con Gophish. El proyecto convierte una campaña aprobada en un entorno temporal y reproducible: valida el alcance, despliega Gophish en AWS, permite medir clics y resultados de simulación, y apaga la instancia cuando termina la autorización.
-
-No es una herramienta para obtener contraseñas reales. Las campañas deben usar destinatarios autorizados, datos ficticios y landing pages educativas. Los informes deben limitarse a la información necesaria para el ejercicio.
-
-## Qué resuelve
-
-Sin este repositorio habría que crear manualmente la red, la instancia, DNS, permisos, secretos, Gophish y el apagado posterior. La plataforma centraliza ese flujo:
-
-```text
-autorización aprobada
-        -> Terraform y GitHub Actions
-        -> VPC, EC2, DNS, SSM y Gophish temporal
-        -> campaña autorizada y métricas
-        -> apagado automático en scope_end
-        -> destroy y auditoría
-```
-
-Terraform crea una VPC, una instancia EC2, una Elastic IP, DNS Route53, parámetros SSM, roles IAM y un EventBridge Scheduler que invoca una Lambda para terminar la instancia al finalizar la ventana autorizada. El paquete Python contiene el cliente REST y servicios para automatizar campañas y reportes.
-
-## Estructura
-
-```text
-clients/<cliente>/       Autorización y configuración de campaña
-catalog/                  Plantillas de correo y catálogo por temática
-automation/               Cliente REST, servicios, modelos y pruebas Python
-scripts/                  Gate de autorización, despliegue, destroy y checks
-terraform/                Módulos AWS y entornos por cliente
-.github/workflows/        Terraform plan y apply con OIDC
-docs/                     Arquitectura, despliegue y seguridad
-```
-
-La creación automática de landing pages todavía no está conectada al servicio Python. Por ahora se crean desde la interfaz de Gophish; el repositorio automatiza principalmente infraestructura, autorización, cliente REST y reportes.
+Plataforma interna para campañas **autorizadas** de concienciación con Gophish. Cada cliente tiene una VPC y un workspace efímeros; la autorización vigente es un gate obligatorio y EventBridge Scheduler apaga la instancia al terminar el alcance.
 
 ## Requisitos
 
-- Windows 10/11, macOS o Linux.
-- Python 3.11 o superior.
-- Terraform 1.7 o superior.
-- [`uv`](https://docs.astral.sh/uv/).
-- AWS CLI para operaciones AWS.
-- Docker solo si se necesita ejecutar servicios localmente; Terraform instala Docker en la instancia EC2.
-- Git y acceso al repositorio.
+Terraform 1.7+, AWS CLI, Python 3.11+, Docker y [`uv`](https://docs.astral.sh/uv/). Elegimos `uv` por sus instalaciones reproducibles y rápidas; el proyecto sigue siendo instalable con cualquier frontend PEP 517.
 
-En Windows se pueden instalar `uv` y Terraform con WinGet:
+## Primeras pruebas locales
 
-```powershell
-winget install --id astral-sh.uv -e
-winget install --id Hashicorp.Terraform -e
-```
+Las pruebas unitarias no necesitan una cuenta AWS, credenciales, Docker ni una instancia de Gophish. Las llamadas HTTP y la ejecución de `destroy.sh` se sustituyen por dobles de prueba.
 
-Después de instalar herramientas desde WinGet, cierre y vuelva a abrir VS Code para actualizar el `PATH`:
-
-```powershell
-uv --version
-terraform version
-```
-
-Si `uv` todavía no aparece en una terminal integrada, reinicie completamente VS Code o actualice el `PATH` de esa sesión:
-
-```powershell
-$env:Path = [Environment]::GetEnvironmentVariable("Path", "User") + ";" + [Environment]::GetEnvironmentVariable("Path", "Machine")
-```
-
-## Preparación local
-
-Desde la raíz del repositorio, `uv` crea `automation/.venv` e instala las versiones fijadas en `uv.lock`:
-
-```powershell
-uv sync --project automation --extra dev --locked
-```
-
-En Linux/macOS se usan los mismos comandos. El `Makefile` ofrece atajos si GNU Make está instalado, pero no es obligatorio.
-
-## Pruebas Python
-
-Las pruebas no necesitan cuenta AWS, credenciales, Docker ni una instancia de Gophish. Las llamadas HTTP y el destroy se sustituyen por dobles de prueba.
-
-Suite completa:
-
-```powershell
-uv run --project automation --extra dev pytest -q automation/tests scripts/tests
-```
-
-Resultado esperado actual:
-
-```text
-9 passed
-```
-
-Pruebas por grupo:
-
-```powershell
-uv run --project automation --extra dev pytest -q automation/tests
-$env:PYTHONPATH = (Get-Location).Path
-uv run --project automation --extra dev pytest -q scripts/tests
-```
-
-Prueba individual:
-
-```powershell
-uv run --project automation --extra dev pytest -vv scripts/tests/test_authorization.py::test_valid
-```
-
-## Validación de Terraform y scripts
-
-Estas comprobaciones son locales y no crean infraestructura:
-
-```powershell
-terraform fmt -check -recursive terraform
-terraform -chdir=terraform/environments/acme-corp init -backend=false
-terraform -chdir=terraform/environments/acme-corp validate
-uv run --project automation --extra dev python scripts/check_yaml.py
-bash -n scripts/*.sh
-git diff --check
-```
-
-`init -backend=false` descarga los providers desde `registry.terraform.io`, pero no toca el state remoto. Terraform genera `terraform/environments/acme-corp/.terraform.lock.hcl`; ese archivo debe conservarse y versionarse para fijar las versiones de providers.
-
-El comando equivalente con GNU Make es:
+Desde la raíz del repositorio:
 
 ```bash
-make check
+# Consulte todos los objetivos disponibles.
+make help
+
+# Cree automation/.venv e instale exactamente las versiones de uv.lock.
+make setup
+
+# Ejecute la suite completa de Python.
+make test
 ```
 
-`make check` reúne pruebas Python, formato y validación Terraform, sintaxis Bash y YAML.
+El resultado esperado actualmente es `12 passed`. Para aislar fallos puede ejecutar:
 
-## Autorización
+```bash
+make test-authorization  # existencia, campos, ventana vencida y caso válido
+make test-automation     # cliente REST, informes y lifecycle
+```
 
-Cada cliente tiene un archivo `clients/<cliente>/authorization.yaml` con:
+También puede ejecutar una sola prueba, con salida detallada:
 
-- `scope_start` y `scope_end`: ventana temporal permitida.
-- `approved_by`: responsable que aprobó el ejercicio.
-- `signed_doc_ref`: referencia al documento firmado, almacenado fuera del repositorio.
-- `included_targets` y `excluded_targets`: alcance autorizado.
+```bash
+uv run --project automation --extra dev pytest -vv \
+  scripts/tests/test_authorization.py::test_valid
+```
 
-Comprobar el gate usando la hora real:
+### Comprobaciones estáticas
 
-```powershell
+```bash
+make terraform-fmt
+make terraform-validate CLIENT=acme-corp
+make shell-check
+make yaml-check
+```
+
+`terraform-validate` usa `-backend=false`: no toca el state remoto ni crea recursos, aunque la primera ejecución necesita acceso a `registry.terraform.io` para descargar providers. `make check` reúne toda la suite local.
+
+### Probar el gate real de autorización
+
+```bash
 python scripts/check_authorization.py --client acme-corp
+echo $?  # 0 = autorizado; cualquier otro valor = despliegue bloqueado
 ```
 
-El código `0` significa autorizado; cualquier otro código bloquea el despliegue. Puede fallar correctamente cuando la hora actual está fuera de la ventana. No se deben cambiar las fechas solo para conseguir un resultado verde; las pruebas unitarias usan una hora fija para probar esos escenarios.
+Este comando usa la hora real. Por eso el ejemplo puede fallar legítimamente fuera de `scope_start`/`scope_end`; no cambie las fechas solo para conseguir un resultado verde. Las pruebas unitarias usan una hora fija y son la forma correcta de probar escenarios de ventana sin debilitar el gate.
 
-## Configurar una PoC en Gophish
-
-Después de desplegar Gophish, el flujo mínimo es:
-
-1. Crear un grupo pequeño con destinatarios autorizados.
-2. Crear un email template ficticio desde el catálogo o desde la interfaz.
-3. Crear una landing page educativa que no solicite ni almacene contraseñas reales.
-4. Configurar un sending profile SMTP de prueba.
-5. Crear una campaña asociando grupo, email template, landing page y URL.
-6. Enviar primero a una cuenta de prueba.
-7. Revisar clics y resultados mínimos necesarios.
-8. Cerrar la campaña y destruir el entorno al terminar la autorización.
-
-La pantalla de Landing Pages vacía es normal en una instalación nueva. La landing page se configura actualmente desde la interfaz de Gophish; los archivos HTML reutilizables y su creación mediante API son una mejora pendiente.
-
-## Despliegue controlado
-
-No se debe ejecutar `scripts/deploy.sh` desde un equipo local. El script exige GitHub Actions con OIDC y el despliegue se realiza desde el environment protegido `production`.
-
-Flujo recomendado:
-
-1. Crear o actualizar la autorización y la configuración del cliente.
-2. Crear una rama distinta de `main`.
-3. Ejecutar las validaciones locales.
-4. Abrir un Pull Request.
-5. Revisar el workflow **Terraform plan** y su plan de cambios.
-6. Obtener la aprobación requerida del environment `production`.
-7. Ejecutar manualmente **Terraform apply**.
-8. Verificar DNS, health check, acceso administrativo y campaña de prueba.
-
-El workflow necesita los secretos o variables `AWS_DEPLOY_ROLE_ARN` y `AWS_REGION`. La confianza del rol debe limitar el `sub` de OIDC al repositorio, workflow y environment esperados.
-
-Antes del primer apply deben existir el bucket de state, la tabla de locking, la zona Route53 y los parámetros SecureString requeridos. Terraform crea marcadores vacíos para los parámetros; sus valores se cargan fuera del repositorio con AWS CLI.
+No use `scripts/deploy.sh` como prueba local: rechaza deliberadamente credenciales locales y solo permite apply desde GitHub Actions con OIDC. Para validar AWS de extremo a extremo, abra un PR, revise el workflow **Terraform plan** y, durante una autorización vigente, ejecute manualmente **Terraform apply** en el environment protegido `production`.
 
 ## Alta de un cliente
 
-1. Copiar `clients/acme-corp` y `terraform/environments/acme-corp` con el nuevo identificador.
-2. Completar `authorization.yaml` y conservar el documento firmado fuera del repositorio.
-3. Configurar `terraform.tfvars` sin secretos.
-4. Crear previamente los recursos de backend, DNS y SSM.
-5. Revisar el rol OIDC y el environment protegido de GitHub.
-6. Ejecutar el gate de autorización y abrir un Pull Request.
-7. Revisar el plan y aplicar solo tras la aprobación correspondiente.
+1. Copie `clients/acme-corp` y `terraform/environments/acme-corp` usando el identificador nuevo.
+2. Complete `authorization.yaml`, conserve el documento firmado fuera del repositorio y configure `terraform.tfvars` (sin secretos).
+3. Cree previamente el bucket de state, la tabla de locking, la zona Route53 y los parámetros SecureString. Terraform solo crea marcadores vacíos; cargue sus valores con `aws ssm put-parameter --overwrite`.
+4. Configure el environment protegido `production` y los secrets/variables GitHub `AWS_DEPLOY_ROLE_ARN` y `AWS_REGION`. La confianza del rol debe limitar `sub` al workflow/environment del repositorio.
+5. Ejecute `python scripts/check_authorization.py --client <cliente>` y abra un PR. Tras revisión, lance el workflow Apply.
 
-## Retirada y seguridad
+Para desarrollo también puede trabajar dentro de `automation/` con `uv sync --extra dev --locked` y `uv run pytest ../automation/tests ../scripts/tests`.
 
-La Lambda programada termina la instancia aunque CI deje de funcionar. Después, el destroy limpia los recursos restantes:
+## Catálogo de emails y landings
 
-```bash
-scripts/destroy.sh acme-corp
-```
+El directorio `catalog/` incluye pares reutilizables para Microsoft 365, RRHH, VPN y Service Desk. Cada JSON de email declara su `landing_page_file`; `launch_campaign` crea ambos recursos en Gophish y enlaza la campaña con sus IDs. Consulte `catalog/README.md` para el inventario, las variables soportadas y las salvaguardas. Las landings de ejemplo no piden contraseñas ni habilitan captura de credenciales.
 
-Los informes pueden contener datos sensibles y no deben versionarse. Limite su acceso y retención al contrato aplicable. No coloque API keys, contraseñas ni documentos firmados en Git.
+## Operación
 
-Consulte [docs/architecture.md](docs/architecture.md), [docs/deployment.md](docs/deployment.md) y [docs/security.md](docs/security.md) para detalles adicionales.
+`scripts/deploy.sh acme-corp` selecciona el workspace, valida autorización y aplica. `scripts/destroy.sh acme-corp` destruye y audita. La Lambda programada termina EC2 aun si CI deja de funcionar; el destroy posterior limpia el resto. Consulte `docs/` para arquitectura, seguridad y runbooks.

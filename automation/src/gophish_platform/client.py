@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, TypeVar
 import httpx
 from pydantic import BaseModel, TypeAdapter
-from .models import Campaign, CampaignRequest, GroupRequest, TemplateRequest
+from .models import Campaign, CampaignRequest, GroupRequest, LandingPageRequest, TemplateRequest
 
 T = TypeVar("T", bound=BaseModel)
 class GophishClient:
@@ -16,7 +16,14 @@ class GophishClient:
         return response.json()
     def create_campaign(self, campaign: CampaignRequest) -> Campaign:
         groups = [{"id": identifier} for identifier in campaign.group_ids]
-        body = campaign.model_dump(mode="json", exclude={"group_ids", "template_id"}) | {"groups": groups, "template": {"id": campaign.template_id}}
+        body = campaign.model_dump(
+            mode="json", exclude={"group_ids", "template_id", "page_id", "sending_profile_id"}
+        ) | {
+            "groups": groups,
+            "template": {"id": campaign.template_id},
+            "page": {"id": campaign.page_id},
+            "smtp": {"id": campaign.sending_profile_id},
+        }
         return Campaign.model_validate(self._request("POST", "/api/campaigns/", body))
     def list_campaigns(self) -> list[Campaign]:
         return TypeAdapter(list[Campaign]).validate_python(self._request("GET", "/api/campaigns/"))
@@ -28,6 +35,8 @@ class GophishClient:
         return self._request("GET", "/api/groups/")
     def create_template(self, template: TemplateRequest) -> dict[str, Any]:
         return self._request("POST", "/api/templates/", template.model_dump(mode="json"))
+    def create_landing_page(self, page: LandingPageRequest) -> dict[str, Any]:
+        return self._request("POST", "/api/pages/", page.model_dump(mode="json"))
     def close(self) -> None:
         self._http.close()
     def __enter__(self) -> "GophishClient": return self

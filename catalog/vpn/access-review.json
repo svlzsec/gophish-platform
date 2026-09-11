@@ -1,0 +1,7 @@
+{
+  "name": "VPN - revisión de acceso remoto",
+  "subject": "Acción requerida: revisión de acceso remoto",
+  "html": "<html><body style=\"margin:0;background:#eef2f5;font-family:Arial,sans-serif;color:#1e293b\"><div style=\"max-width:600px;margin:30px auto;background:white\"><div style=\"background:#133b5c;color:white;padding:22px;font-size:20px\">SecureConnect · Acceso remoto</div><div style=\"padding:30px\"><h2>Revisión trimestral de acceso</h2><p>Hola {{.FirstName}}, el acceso remoto asociado a {{.Email}} está pendiente de revisión.</p><p><a href=\"{{.URL}}\" style=\"display:inline-block;background:#168aad;color:white;padding:12px 18px;text-decoration:none\">Revisar acceso</a></p><p style=\"font-size:12px;color:#64748b\">Si no reconoces esta solicitud, comunícate con el service desk por el canal habitual.</p><img src=\"{{.TrackingURL}}\" alt=\"\" width=\"1\" height=\"1\"></div></div></body></html>",
+  "text": "Revisa el acceso remoto asociado a {{.Email}}: {{.URL}}",
+  "landing_page_file": "landing-page.html"
+}

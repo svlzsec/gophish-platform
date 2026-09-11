@@ -1,6 +1,7 @@
 {
-  "name": "Microsoft 365 security awareness",
-  "subject": "Revisión de seguridad autorizada",
-  "html": "<html><body><p>Ejercicio interno de concienciación.</p><p><a href=\"{{.URL}}\">Revisar</a></p></body></html>",
-  "text": "Ejercicio interno de concienciación: {{.URL}}"
+  "name": "M365 - revisión de actividad",
+  "subject": "{{.FirstName}}, revisa la actividad reciente de tu cuenta",
+  "html": "<html><body style=\"margin:0;background:#f4f5f7;font-family:Arial,sans-serif;color:#242424\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\" style=\"padding:36px 16px\"><table role=\"presentation\" width=\"560\" style=\"max-width:100%;background:#fff;border:1px solid #ddd\"><tr><td style=\"padding:32px\"><div style=\"font-size:20px;font-weight:600\">Portal de productividad</div><h1 style=\"font-size:24px\">Actividad de inicio de sesión</h1><p>Hola {{.FirstName}}, detectamos una solicitud de acceso que requiere revisión antes de que expire.</p><p style=\"margin:28px 0\"><a href=\"{{.URL}}\" style=\"background:#2563a6;color:#fff;text-decoration:none;padding:12px 20px;display:inline-block\">Revisar actividad</a></p><p style=\"font-size:12px;color:#666\">Mensaje automatizado del equipo de seguridad. No respondas a este correo.</p><img src=\"{{.TrackingURL}}\" alt=\"\" width=\"1\" height=\"1\"></td></tr></table></td></tr></table></body></html>",
+  "text": "Hola {{.FirstName}}, revisa la actividad reciente de tu cuenta en {{.URL}}. Mensaje automatizado del equipo de seguridad.",
+  "landing_page_file": "landing-page.html"
 }
