@@ -1,0 +1,8 @@
+client: acme-corp
+scope_start: "2026-09-15T00:00:00Z"
+scope_end: "2026-09-22T00:00:00Z"
+approved_by: "Nombre Apellido, cargo"
+signed_doc_ref: "s3://gophish-platform-docs/acme-corp/authorization-signed.pdf"
+included_targets:
+  - "*.acme-corp.com"
+excluded_targets: []

@@ -1,0 +1,41 @@
+name: Terraform plan
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      matrix: { client: [acme-corp] }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install PyYAML
+      - run: python scripts/check_authorization.py --client '${{ matrix.client }}'
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: "1.7.5" }
+      - run: terraform fmt -check -recursive terraform
+      - run: terraform -chdir=terraform/environments/${{ matrix.client }} init -backend=false
+      - run: terraform -chdir=terraform/environments/${{ matrix.client }} validate
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: aquasecurity/tfsec-action@v1.0.3
+        with: { working_directory: terraform, additional_args: "--minimum-severity HIGH" }
+      - uses: bridgecrewio/checkov-action@v12
+        with: { directory: terraform, quiet: true, soft_fail: false }
+      - id: plan
+        run: terraform -chdir=terraform/environments/${{ matrix.client }} plan -input=false -no-color -var-file=terraform.tfvars | tee plan.txt
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('terraform/environments/${{ matrix.client }}/plan.txt', 'utf8').slice(-60000);
+            await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body: `### Terraform plan (${{ matrix.client }})\n\n\`\`\`\n${body}\n\`\`\`` });
