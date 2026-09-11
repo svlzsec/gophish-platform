@@ -1,0 +1,29 @@
+name: Terraform apply
+on:
+  workflow_dispatch:
+    inputs:
+      client:
+        description: Client identifier
+        required: true
+        type: choice
+        options: [acme-corp]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install PyYAML
+      - run: python scripts/check_authorization.py --client '${{ inputs.client }}'
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: "1.7.5" }
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - run: scripts/deploy.sh '${{ inputs.client }}'

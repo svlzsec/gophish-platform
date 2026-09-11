@@ -1,0 +1,1 @@
+"""Authorized Gophish campaign automation."""
