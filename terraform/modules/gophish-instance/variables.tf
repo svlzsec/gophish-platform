@@ -36,3 +36,31 @@ variable "secret_names" {
   type    = set(string)
   default = ["api-key", "admin-password"]
 }
+variable "enable_ses" {
+  type    = bool
+  default = false
+}
+variable "mail_domain" {
+  type    = string
+  default = ""
+  validation {
+    condition     = !var.enable_ses || length(var.mail_domain) > 0
+    error_message = "mail_domain is required when enable_ses is true."
+  }
+}
+variable "mail_from" {
+  type    = string
+  default = ""
+  validation {
+    condition     = !var.enable_ses || can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.mail_from))
+    error_message = "mail_from must be a valid address when enable_ses is true."
+  }
+}
+variable "mail_smtp_port" {
+  type    = number
+  default = 587
+  validation {
+    condition     = var.mail_smtp_port == 465 || var.mail_smtp_port == 587
+    error_message = "mail_smtp_port must be 465 or 587."
+  }
+}

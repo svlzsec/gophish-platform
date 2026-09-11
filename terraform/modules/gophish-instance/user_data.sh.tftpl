@@ -4,12 +4,19 @@ dnf install -y docker awscli
 systemctl enable --now docker
 mkdir -p /opt/gophish
 chmod 700 /opt/gophish
-for name in api-key admin-password; do
+for name in ${secret_names}; do
   value="$(aws ssm get-parameter --region '${region}' --name "/gophish-platform/${client_name}/$name" --with-decryption --query Parameter.Value --output text)"
   test "$value" != PROVISION_EXTERNALLY
   printf '%s=%q\n' "$${name//-/_}" "$value" >> /opt/gophish/runtime.env
 done
 chmod 600 /opt/gophish/runtime.env
+if ${enable_ses}; then
+  cat >>/opt/gophish/runtime.env <<'ENV'
+SMTP_HOST=${mail_smtp_host}
+SMTP_PORT=${mail_smtp_port}
+SMTP_FROM=${mail_from}
+ENV
+fi
 cat >/opt/gophish/docker-compose.yml <<'YAML'
 services:
   gophish:

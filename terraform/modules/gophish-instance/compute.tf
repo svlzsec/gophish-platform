@@ -14,9 +14,14 @@ resource "aws_instance" "gophish" {
     tags        = local.tags
   }
   user_data = templatefile("${path.module}/user_data.sh.tftpl", {
-    region        = data.aws_region.current.name
-    client_name   = var.client_name
-    gophish_image = var.gophish_image
+    region         = data.aws_region.current.name
+    client_name    = var.client_name
+    gophish_image  = var.gophish_image
+    secret_names   = join(" ", [for name in local.runtime_secret_names : "'${name}'"])
+    enable_ses     = var.enable_ses
+    mail_smtp_host = local.mail_smtp_host
+    mail_smtp_port = var.mail_smtp_port
+    mail_from      = var.mail_from
   })
   user_data_replace_on_change = true
   tags                        = merge(local.tags, { Name = "${var.client_name}-gophish" })
